@@ -41,9 +41,16 @@ void markerPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
 {
    geometry_msgs::PoseStamped markerPose = *msg;
    geometry_msgs::PoseStamped ps;
-   ps.pose.position.x = markerPose.pose.position.z - 0.5;
-   ps.pose.position.z = -markerPose.pose.position.y;
+
+   // Front camera tracking
+   //ps.pose.position.x = markerPose.pose.position.z - 0.5;
+   //ps.pose.position.z = -markerPose.pose.position.y;
+   //ps.pose.position.y = -markerPose.pose.position.x;
+
+   // Downward camera tracking
+   ps.pose.position.x = -markerPose.pose.position.y;
    ps.pose.position.y = -markerPose.pose.position.x;
+   ps.pose.position.z = -(markerPose.pose.position.z - 0.5);
 
    ps.header.stamp = ros::Time::now();
 

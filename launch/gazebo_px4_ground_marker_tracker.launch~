@@ -4,7 +4,8 @@
 </include>
 <include file="$(find px4)/launch/mavros_sitl.launch">
 </include>
-
+<include file="$(find aruco_ros)/launch/single.launch">
+</include>
 <node pkg="body_axis_controller" name="body_axis_controller_node" type="body_axis_controller_node">
 </node>
 
