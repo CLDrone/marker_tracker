@@ -34,6 +34,7 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <tf/tf.h>
 
 ros::Publisher bodyAxisPositionPublisher;
 
@@ -46,11 +47,18 @@ void markerPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
    //ps.pose.position.x = markerPose.pose.position.z - 0.5;
    //ps.pose.position.z = -markerPose.pose.position.y;
    //ps.pose.position.y = -markerPose.pose.position.x;
+   //ps.pose.orientation.w = 1;
 
    // Downward camera tracking
    ps.pose.position.x = -markerPose.pose.position.y;
    ps.pose.position.y = -markerPose.pose.position.x;
    ps.pose.position.z = -(markerPose.pose.position.z - 0.5);
+
+   tf::Pose currentPose;
+   tf::poseMsgToTF(markerPose.pose,currentPose);
+   double yawAngle = tf::getYaw(currentPose.getRotation());
+   ROS_INFO_STREAM("yawAngle:" << yawAngle);
+   ps.pose.orientation = tf::createQuaternionMsgFromYaw(-yawAngle);
 
    ps.header.stamp = ros::Time::now();
 
