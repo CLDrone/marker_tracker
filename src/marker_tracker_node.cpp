@@ -37,32 +37,83 @@
 #include <tf/tf.h>
 
 ros::Publisher bodyAxisPositionPublisher;
+geometry_msgs::PoseStamped ps,lastMarkerPose;
+
+bool hasLastMarkerPose;
+ros::Time lastTime;
 
 void markerPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
 {
    geometry_msgs::PoseStamped markerPose = *msg;
-   geometry_msgs::PoseStamped ps;
-
+   
    // Front camera tracking
-   //ps.pose.position.x = markerPose.pose.position.z - 0.5;
-   //ps.pose.position.z = -markerPose.pose.position.y;
-   //ps.pose.position.y = -markerPose.pose.position.x;
-   //ps.pose.orientation.w = 1;
+   ps.pose.position.x = (markerPose.pose.position.z - 2.5)/2;
+   ps.pose.position.z = -markerPose.pose.position.y/2;
+   ps.pose.position.y = -markerPose.pose.position.x/2;
+   ros::Time currentTime = ros::Time::now();
+
+   if(hasLastMarkerPose){
+      geometry_msgs::Pose offsetPose;
+      offsetPose.position.x = markerPose.pose.position.x - lastMarkerPose.pose.position.x;
+      offsetPose.position.y = markerPose.pose.position.y - lastMarkerPose.pose.position.y;
+      offsetPose.position.z = markerPose.pose.position.z - lastMarkerPose.pose.position.z;
+      ros::Duration offsetTime = currentTime - lastTime;
+      offsetPose.position.x = offsetPose.position.x / offsetTime.toSec();
+      offsetPose.position.y = offsetPose.position.y / offsetTime.toSec();
+      offsetPose.position.z = offsetPose.position.z / offsetTime.toSec();
+
+      //ROS_INFO_STREAM("offset :" << offsetPose.position.x << offsetPose.position.y << offsetPose.position.z);
+      ps.pose.position.x = ps.pose.position.x - offsetPose.position.z/2;
+      ps.pose.position.z = ps.pose.position.z - offsetPose.position.y/2;
+      ps.pose.position.y = ps.pose.position.y - offsetPose.position.x/2;
+   
+   }
+
+    if (ps.pose.position.x > 0.5)
+    {
+      ps.pose.position.x = 0.5;
+    }
+    if (ps.pose.position.y > 0.5)
+    {
+      ps.pose.position.y = 0.5;
+    }
+    if (ps.pose.position.z > 0.5)
+    {
+      ps.pose.position.z = 0.5;
+    }
+    if (ps.pose.position.x < -0.5)
+    {
+      ps.pose.position.x = -0.5;
+    }
+    if (ps.pose.position.y < -0.5)
+    {
+      ps.pose.position.y = -0.5;
+    }
+    if (ps.pose.position.z < -0.5)
+    {
+      ps.pose.position.z = -0.5;
+    }
+    
+
+   
 
    // Downward camera tracking
-   ps.pose.position.x = -markerPose.pose.position.y;
-   ps.pose.position.y = -markerPose.pose.position.x;
-   ps.pose.position.z = -(markerPose.pose.position.z - 0.5);
-
+   //ps.pose.position.x = -markerPose.pose.position.y;
+   //ps.pose.position.y = -markerPose.pose.position.x;
+   //ps.pose.position.z = -(markerPose.pose.position.z - 0.5);
+   
+   /*
    tf::Pose currentPose;
    tf::poseMsgToTF(markerPose.pose,currentPose);
    double yawAngle = tf::getYaw(currentPose.getRotation());
    ROS_INFO_STREAM("yawAngle:" << yawAngle);
    ps.pose.orientation = tf::createQuaternionMsgFromYaw(-yawAngle);
-
-   ps.header.stamp = ros::Time::now();
-
-   bodyAxisPositionPublisher.publish(ps);
+   */
+   
+   lastMarkerPose = markerPose;
+   lastTime = currentTime;
+   hasLastMarkerPose = true;
+   
 }
 
 int main(int argc, char **argv)
@@ -72,9 +123,24 @@ int main(int argc, char **argv)
 
   bodyAxisPositionPublisher = nodeHandle.advertise<geometry_msgs::PoseStamped>("/CLDrone/body_axis_position/local",10);
   ros::Subscriber markerPoseSubscriber = nodeHandle.subscribe("/aruco_single/pose",10,markerPoseReceived);
-  
 
-  ros::spin();
+  ps.pose.orientation.w = 1;
+
+  hasLastMarkerPose = false;
+
+  ros::Rate loopRate(10.0);
+  while(ros::ok())
+  {
+    ps.header.seq++;
+	  ps.header.stamp = ros::Time::now();
+
+	  
+	  bodyAxisPositionPublisher.publish(ps);
+	  
+    
+  	ros::spinOnce();
+  	loopRate.sleep();
+  }
 
   return 0;
 

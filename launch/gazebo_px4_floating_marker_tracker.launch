@@ -6,4 +6,6 @@
 </include>
 <include file="$(find aruco_ros)/launch/single.launch">
 </include>
+<node pkg="body_axis_controller" name="body_axis_controller_node" type="body_axis_controller_node">
+</node>
 </launch>
